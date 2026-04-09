@@ -1,819 +1,458 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Mama Points Club</title>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Mama Points Club</title>
 
-  <!-- Fredoka: matches the chunky rounded display font from the PDF -->
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&family=Nunito:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
+<!-- Fredoka: matches the chunky rounded display font from the PDF -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&family=Nunito:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
 
-  <style>
-    /* Art direction: matching the original PDF
-       - White + light grid background
-       - Coral red #e8442a as the single accent
-       - Fredoka (chunky rounded) for display headings
-       - Nunito for body text
-       - Dashed circle tokens, heart motifs */
+<!-- Firebase App (core) -->
+<script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-app.js"></script>
+<!-- Firebase Firestore -->
+<script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js"></script>
 
-    :root {
-      --red: #e8442a;
-      --red-light: #fdecea;
-      --red-mid: #f5b4ac;
-      --grid-color: #e0e0e0;
-      --text: #1a1a1a;
-      --text-muted: #888;
-      --text-faint: #bbb;
-      --surface: #ffffff;
-      --border: #e8e8e8;
-      --font-display: 'Fredoka', 'Trebuchet MS', sans-serif;
-      --font-body: 'Nunito', 'Segoe UI', sans-serif;
-      --radius-sm: 0.375rem;
-      --radius-md: 0.5rem;
-      --radius-lg: 0.75rem;
-      --radius-xl: 1rem;
-      --radius-full: 9999px;
-      --space-1: 0.25rem; --space-2: 0.5rem; --space-3: 0.75rem;
-      --space-4: 1rem; --space-5: 1.25rem; --space-6: 1.5rem;
-      --space-8: 2rem; --space-10: 2.5rem; --space-12: 3rem;
-      --shadow-sm: 0 1px 4px rgba(232,68,42,0.08);
-      --shadow-md: 0 4px 16px rgba(232,68,42,0.12);
-    }
+<style>
+/* Art direction: matching the original PDF
+- White + light grid background
+- Coral red #e8442a as the single accent
+- Fredoka (chunky rounded) for display headings
+- Nunito for body text
+- Dashed circle tokens, heart motifs */
+:root {
+--red: #e8442a;
+--red-light: #fdecea;
+--red-mid: #f5b4ac;
+--grid-color: #e0e0e0;
+--text: #1a1a1a;
+--text-muted: #888;
+--text-faint: #bbb;
+--surface: #ffffff;
+--border: #e8e8e8;
+--font-display: 'Fredoka', 'Trebuchet MS', sans-serif;
+--font-body: 'Nunito', 'Segoe UI', sans-serif;
+--radius-sm: 0.375rem;
+--radius-md: 0.5rem;
+--radius-lg: 0.75rem;
+--radius-xl: 1rem;
+--radius-full: 9999px;
+--space-1: 0.25rem;
+--space-2: 0.5rem;
+--space-3: 0.75rem;
+--space-4: 1rem;
+--space-5: 1.25rem;
+--space-6: 1.5rem;
+--space-8: 2rem;
+--space-10: 2.5rem;
+--space-12: 3rem;
+--shadow-sm: 0 1px 4px rgba(232,68,42,0.08);
+--shadow-md: 0 4px 16px rgba(232,68,42,0.12);
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { -webkit-font-smoothing: antialiased; scroll-behavior: smooth; }
+body {
+min-height: 100dvh;
+font-family: var(--font-body);
+font-size: 1rem;
+color: var(--text);
+background-color: #fff;
+background-image: linear-gradient(var(--grid-color) 1px, transparent 1px), linear-gradient(90deg, var(--grid-color) 1px, transparent 1px);
+background-size: 48px 48px;
+}
+button { cursor: pointer; background: none; border: none; font: inherit; color: inherit; }
+img, svg { display: block; max-width: 100%; }
+:focus-visible { outline: 2px solid var(--red); outline-offset: 3px; border-radius: var(--radius-sm); }
+a, button { transition: all 160ms ease; }
+.page { max-width: 860px; margin: 0 auto; padding: var(--space-8) var(--space-4) var(--space-12); }
+.site-header { text-align: center; padding: var(--space-8) var(--space-4) var(--space-6); position: relative; }
+.header-title { font-family: var(--font-display); font-weight: 700; font-size: clamp(3.5rem, 12vw, 6rem); color: var(--red); line-height: 1; letter-spacing: 0.02em; }
+.header-subtitle { font-family: var(--font-display); font-weight: 500; font-size: clamp(1.4rem, 4vw, 2rem); color: var(--red); margin-top: -0.1em; }
+.header-heart { font-size: clamp(1.8rem, 5vw, 2.5rem); margin-top: var(--space-2); color: var(--red); display: block; }
+.kids-grid { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-6); margin-top: var(--space-6); }
+@media (max-width: 560px) { .kids-grid { grid-template-columns: 1fr; } }
+.kid-section { text-align: center; }
+.kid-name { font-family: var(--font-display); font-weight: 600; font-size: clamp(2rem, 6vw, 3rem); color: var(--red); margin-bottom: var(--space-4); }
+.tokens-grid { display: flex; flex-wrap: wrap; justify-content: center; gap: var(--space-2); margin-bottom: var(--space-3); }
+.token { width: 52px; height: 52px; border-radius: var(--radius-full); border: 2.5px dashed var(--red); display: flex; align-items: center; justify-content: center; font-family: var(--font-display); font-weight: 700; font-size: 1.1rem; color: var(--red); transition: all 200ms ease; position: relative; }
+.token.filled { background: var(--red); color: white; border-style: solid; }
+.token.heart-token { font-size: 1.4rem; }
+.token.heart-token.filled { background: var(--red); }
+.points-counter { background: white; border: 2.5px solid var(--red); border-radius: var(--radius-xl); padding: var(--space-4) var(--space-6); margin: var(--space-4) auto; display: inline-block; min-width: 140px; box-shadow: var(--shadow-sm); }
+.points-number { font-family: var(--font-display); font-weight: 700; font-size: clamp(2.5rem, 8vw, 4rem); color: var(--red); line-height: 1; transition: transform 150ms ease, opacity 150ms ease; }
+.points-label { font-family: var(--font-display); font-size: 0.95rem; color: var(--text-muted); margin-top: 2px; letter-spacing: 0.03em; }
+.progress-wrap { margin: var(--space-3) var(--space-2); }
+.progress-info { display: flex; justify-content: space-between; font-size: 0.78rem; color: var(--text-muted); margin-bottom: var(--space-1); font-weight: 600; }
+.progress-bg { height: 10px; background: var(--red-light); border-radius: var(--radius-full); overflow: hidden; border: 1.5px solid var(--red-mid); }
+.progress-fill { height: 100%; background: var(--red); border-radius: var(--radius-full); transition: width 400ms cubic-bezier(0.16,1,0.3,1); }
+.earn-section-label { font-family: var(--font-display); font-size: 0.85rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.08em; font-weight: 600; margin-bottom: var(--space-2); text-align: left; }
+.earn-btns { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-2); margin-bottom: var(--space-3); }
+.earn-btn { background: white; border: 2px solid var(--red-mid); border-radius: var(--radius-lg); padding: var(--space-2) var(--space-3); font-family: var(--font-body); font-size: 0.8rem; font-weight: 600; color: var(--text); text-align: left; min-height: 44px; line-height: 1.3; cursor: pointer; }
+.earn-btn:hover { background: var(--red-light); border-color: var(--red); color: var(--red); }
+.earn-btn:active { transform: scale(0.96); }
+.manual-row { display: flex; gap: var(--space-2); align-items: center; margin-bottom: var(--space-2); }
+.manual-input { flex: 1; padding: var(--space-2) var(--space-3); border: 2px solid var(--red-mid); border-radius: var(--radius-lg); font-family: var(--font-body); font-size: 0.9rem; min-height: 44px; background: white; color: var(--text); }
+.manual-input:focus { outline: none; border-color: var(--red); box-shadow: 0 0 0 3px rgba(232,68,42,0.15); }
+.btn { font-family: var(--font-display); font-weight: 600; font-size: 0.95rem; padding: var(--space-2) var(--space-5); border-radius: var(--radius-full); min-height: 44px; display: inline-flex; align-items: center; gap: var(--space-2); border: 2px solid transparent; letter-spacing: 0.02em; }
+.btn-primary { background: var(--red); color: white; }
+.btn-primary:hover { background: #c73520; transform: translateY(-1px); box-shadow: var(--shadow-md); }
+.btn-primary:active { transform: none; }
+.btn-ghost { background: white; color: var(--red); border-color: var(--red-mid); }
+.btn-ghost:hover { background: var(--red-light); border-color: var(--red); }
+.btn-danger { background: white; color: #c0392b; border-color: #f5c6c6; font-size: 0.8rem; padding: var(--space-1) var(--space-3); min-height: 36px; }
+.btn-danger:hover { background: #fdecea; }
+.section-divider { text-align: center; margin: var(--space-10) 0 var(--space-6); position: relative; }
+.section-divider::before { content: ''; position: absolute; top: 50%; left: 0; right: 0; height: 1.5px; background: var(--red-mid); }
+.section-divider-label { position: relative; display: inline-block; background: white; padding: 0 var(--space-4); font-family: var(--font-display); font-weight: 700; font-size: clamp(1.5rem, 5vw, 2.2rem); color: var(--red); letter-spacing: 0.04em; }
+.rewards-header { text-align: center; margin-bottom: var(--space-6); }
+.rewards-title { font-family: var(--font-display); font-weight: 700; font-size: clamp(2rem, 7vw, 3.5rem); color: var(--red); letter-spacing: 0.04em; }
+.rewards-cols { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-8); }
+@media (max-width: 560px) { .rewards-cols { grid-template-columns: 1fr; } }
+.reward-col-name { font-family: var(--font-display); font-weight: 600; font-size: clamp(1.8rem, 5vw, 2.5rem); color: var(--red); text-align: center; margin-bottom: var(--space-4); }
+.reward-tier-block { margin-bottom: var(--space-6); }
+.reward-tier-pts { font-family: var(--font-body); font-weight: 800; font-size: 1rem; color: var(--text); margin-bottom: var(--space-2); text-align: center; }
+.reward-list { list-style: disc; padding-left: var(--space-6); display: flex; flex-direction: column; gap: var(--space-1); }
+.reward-list li { font-family: var(--font-body); font-size: 0.95rem; color: var(--text); }
+.reward-col-divider { height: 1.5px; background: var(--border); margin: var(--space-4) 0; }
+.earn-for-title { font-family: var(--font-display); font-weight: 600; font-size: clamp(1.5rem, 4vw, 2rem); color: var(--red); text-align: center; margin-bottom: var(--space-5); }
+.earn-for-list { list-style: none; text-align: center; display: flex; flex-direction: column; gap: var(--space-3); }
+.earn-for-list li { font-family: var(--font-body); font-size: clamp(0.95rem, 2.5vw, 1.1rem); color: var(--text); }
+.history-box { background: white; border: 2px solid var(--border); border-radius: var(--radius-xl); overflow: hidden; }
+.history-empty { padding: var(--space-10); text-align: center; color: var(--text-faint); font-family: var(--font-display); font-size: 1rem; }
+.history-item { display: flex; align-items: center; gap: var(--space-3); padding: var(--space-3) var(--space-5); border-bottom: 1px solid var(--border); font-size: 0.88rem; animation: slideIn 200ms ease; }
+.history-item:last-child { border-bottom: none; }
+@keyframes slideIn { from { opacity:0; transform:translateY(-4px); } to { opacity:1; transform:none; } }
+.h-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--red); flex-shrink: 0; }
+.h-desc { flex: 1; }
+.h-pts { font-weight: 800; font-family: var(--font-display); }
+.h-pts.pos { color: var(--red); }
+.h-pts.neg { color: #c0392b; }
+.h-time { color: var(--text-faint); font-size: 0.78rem; flex-shrink: 0; }
+.toast-container { position: fixed; bottom: var(--space-6); left: 50%; transform: translateX(-50%); z-index: 999; display: flex; flex-direction: column; gap: var(--space-2); align-items: center; pointer-events: none; }
+.toast { background: var(--red); color: white; padding: var(--space-2) var(--space-5); border-radius: var(--radius-full); font-family: var(--font-display); font-size: 1rem; font-weight: 600; box-shadow: 0 4px 20px rgba(232,68,42,0.35); animation: toastIn 280ms cubic-bezier(0.16,1,0.3,1), toastOut 280ms 2.2s ease forwards; white-space: nowrap; }
+@keyframes toastIn { from { opacity:0; transform:translateY(10px) scale(0.95); } to { opacity:1; transform:none; } }
+@keyframes toastOut { to { opacity:0; transform:translateY(6px) scale(0.95); } }
+.white-card { background: white; border-radius: var(--radius-xl); padding: var(--space-6); box-shadow: var(--shadow-sm); border: 1.5px solid var(--border); }
+.section-gap { height: var(--space-10); }
+.reset-row { text-align: center; margin-top: var(--space-6); }
 
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-    html { -webkit-font-smoothing: antialiased; scroll-behavior: smooth; }
-
-    body {
-      min-height: 100dvh;
-      font-family: var(--font-body);
-      font-size: 1rem;
-      color: var(--text);
-      background-color: #fff;
-      /* Grid background matching the PDF */
-      background-image:
-        linear-gradient(var(--grid-color) 1px, transparent 1px),
-        linear-gradient(90deg, var(--grid-color) 1px, transparent 1px);
-      background-size: 48px 48px;
-    }
-
-    button { cursor: pointer; background: none; border: none; font: inherit; color: inherit; }
-    img, svg { display: block; max-width: 100%; }
-    :focus-visible { outline: 2px solid var(--red); outline-offset: 3px; border-radius: var(--radius-sm); }
-    a, button { transition: all 160ms ease; }
-
-    /* ===== LAYOUT ===== */
-    .page { max-width: 860px; margin: 0 auto; padding: var(--space-8) var(--space-4) var(--space-12); }
-
-    /* ===== HEADER ===== */
-    .site-header {
-      text-align: center;
-      padding: var(--space-8) var(--space-4) var(--space-6);
-      position: relative;
-    }
-    .header-title {
-      font-family: var(--font-display);
-      font-weight: 700;
-      font-size: clamp(3.5rem, 12vw, 6rem);
-      color: var(--red);
-      line-height: 1;
-      letter-spacing: 0.02em;
-    }
-    .header-subtitle {
-      font-family: var(--font-display);
-      font-weight: 500;
-      font-size: clamp(1.4rem, 4vw, 2rem);
-      color: var(--red);
-      margin-top: -0.1em;
-    }
-    .header-heart {
-      font-size: clamp(1.8rem, 5vw, 2.5rem);
-      margin-top: var(--space-2);
-      color: var(--red);
-      display: block;
-    }
-
-    /* ===== KIDS GRID ===== */
-    .kids-grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: var(--space-6);
-      margin-top: var(--space-6);
-    }
-    @media (max-width: 560px) { .kids-grid { grid-template-columns: 1fr; } }
-
-    .kid-section { text-align: center; }
-    .kid-name {
-      font-family: var(--font-display);
-      font-weight: 600;
-      font-size: clamp(2rem, 6vw, 3rem);
-      color: var(--red);
-      margin-bottom: var(--space-4);
-    }
-
-    /* Dashed token circles — matching the PDF */
-    .tokens-grid {
-      display: flex;
-      flex-wrap: wrap;
-      justify-content: center;
-      gap: var(--space-2);
-      margin-bottom: var(--space-3);
-    }
-    .token {
-      width: 52px; height: 52px;
-      border-radius: var(--radius-full);
-      border: 2.5px dashed var(--red);
-      display: flex; align-items: center; justify-content: center;
-      font-family: var(--font-display);
-      font-weight: 700;
-      font-size: 1.1rem;
-      color: var(--red);
-      transition: all 200ms ease;
-      position: relative;
-    }
-    .token.filled {
-      background: var(--red);
-      color: white;
-      border-style: solid;
-    }
-    .token.heart-token {
-      font-size: 1.4rem;
-    }
-    .token.heart-token.filled {
-      background: var(--red);
-    }
-
-    /* Points counter */
-    .points-counter {
-      background: white;
-      border: 2.5px solid var(--red);
-      border-radius: var(--radius-xl);
-      padding: var(--space-4) var(--space-6);
-      margin: var(--space-4) auto;
-      display: inline-block;
-      min-width: 140px;
-      box-shadow: var(--shadow-sm);
-    }
-    .points-number {
-      font-family: var(--font-display);
-      font-weight: 700;
-      font-size: clamp(2.5rem, 8vw, 4rem);
-      color: var(--red);
-      line-height: 1;
-      transition: transform 150ms ease, opacity 150ms ease;
-    }
-    .points-label {
-      font-family: var(--font-display);
-      font-size: 0.95rem;
-      color: var(--text-muted);
-      margin-top: 2px;
-      letter-spacing: 0.03em;
-    }
-
-    /* Progress to next reward */
-    .progress-wrap { margin: var(--space-3) var(--space-2); }
-    .progress-info {
-      display: flex; justify-content: space-between;
-      font-size: 0.78rem; color: var(--text-muted);
-      margin-bottom: var(--space-1); font-weight: 600;
-    }
-    .progress-bg {
-      height: 10px;
-      background: var(--red-light);
-      border-radius: var(--radius-full);
-      overflow: hidden;
-      border: 1.5px solid var(--red-mid);
-    }
-    .progress-fill {
-      height: 100%;
-      background: var(--red);
-      border-radius: var(--radius-full);
-      transition: width 400ms cubic-bezier(0.16,1,0.3,1);
-    }
-
-    /* ===== EARN BUTTONS ===== */
-    .earn-section-label {
-      font-family: var(--font-display);
-      font-size: 0.85rem;
-      color: var(--text-muted);
-      text-transform: uppercase;
-      letter-spacing: 0.08em;
-      font-weight: 600;
-      margin-bottom: var(--space-2);
-      text-align: left;
-    }
-    .earn-btns {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: var(--space-2);
-      margin-bottom: var(--space-3);
-    }
-    .earn-btn {
-      background: white;
-      border: 2px solid var(--red-mid);
-      border-radius: var(--radius-lg);
-      padding: var(--space-2) var(--space-3);
-      font-family: var(--font-body);
-      font-size: 0.8rem;
-      font-weight: 600;
-      color: var(--text);
-      text-align: left;
-      min-height: 44px;
-      line-height: 1.3;
-      cursor: pointer;
-    }
-    .earn-btn:hover { background: var(--red-light); border-color: var(--red); color: var(--red); }
-    .earn-btn:active { transform: scale(0.96); }
-
-    .manual-row {
-      display: flex; gap: var(--space-2); align-items: center;
-      margin-bottom: var(--space-2);
-    }
-    .manual-input {
-      flex: 1;
-      padding: var(--space-2) var(--space-3);
-      border: 2px solid var(--red-mid);
-      border-radius: var(--radius-lg);
-      font-family: var(--font-body);
-      font-size: 0.9rem;
-      min-height: 44px;
-      background: white;
-      color: var(--text);
-    }
-    .manual-input:focus { outline: none; border-color: var(--red); box-shadow: 0 0 0 3px rgba(232,68,42,0.15); }
-
-    .btn {
-      font-family: var(--font-display);
-      font-weight: 600;
-      font-size: 0.95rem;
-      padding: var(--space-2) var(--space-5);
-      border-radius: var(--radius-full);
-      min-height: 44px;
-      display: inline-flex; align-items: center; gap: var(--space-2);
-      border: 2px solid transparent;
-      letter-spacing: 0.02em;
-    }
-    .btn-primary { background: var(--red); color: white; }
-    .btn-primary:hover { background: #c73520; transform: translateY(-1px); box-shadow: var(--shadow-md); }
-    .btn-primary:active { transform: none; }
-    .btn-ghost { background: white; color: var(--red); border-color: var(--red-mid); }
-    .btn-ghost:hover { background: var(--red-light); border-color: var(--red); }
-    .btn-danger { background: white; color: #c0392b; border-color: #f5c6c6; font-size: 0.8rem; padding: var(--space-1) var(--space-3); min-height: 36px; }
-    .btn-danger:hover { background: #fdecea; }
-
-    /* ===== DIVIDER ===== */
-    .section-divider {
-      text-align: center;
-      margin: var(--space-10) 0 var(--space-6);
-      position: relative;
-    }
-    .section-divider::before {
-      content: '';
-      position: absolute; top: 50%; left: 0; right: 0;
-      height: 1.5px; background: var(--red-mid);
-    }
-    .section-divider-label {
-      position: relative;
-      display: inline-block;
-      background: white;
-      padding: 0 var(--space-4);
-      font-family: var(--font-display);
-      font-weight: 700;
-      font-size: clamp(1.5rem, 5vw, 2.2rem);
-      color: var(--red);
-      letter-spacing: 0.04em;
-    }
-
-    /* ===== REWARD MENU ===== */
-    .rewards-header {
-      text-align: center;
-      margin-bottom: var(--space-6);
-    }
-    .rewards-title {
-      font-family: var(--font-display);
-      font-weight: 700;
-      font-size: clamp(2rem, 7vw, 3.5rem);
-      color: var(--red);
-      letter-spacing: 0.04em;
-    }
-
-    .rewards-cols {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: var(--space-8);
-    }
-    @media (max-width: 560px) { .rewards-cols { grid-template-columns: 1fr; } }
-
-    .reward-col-name {
-      font-family: var(--font-display);
-      font-weight: 600;
-      font-size: clamp(1.8rem, 5vw, 2.5rem);
-      color: var(--red);
-      text-align: center;
-      margin-bottom: var(--space-4);
-    }
-
-    .reward-tier-block { margin-bottom: var(--space-6); }
-    .reward-tier-pts {
-      font-family: var(--font-body);
-      font-weight: 800;
-      font-size: 1rem;
-      color: var(--text);
-      margin-bottom: var(--space-2);
-      text-align: center;
-    }
-    .reward-list {
-      list-style: disc;
-      padding-left: var(--space-6);
-      display: flex; flex-direction: column; gap: var(--space-1);
-    }
-    .reward-list li {
-      font-family: var(--font-body);
-      font-size: 0.95rem;
-      color: var(--text);
-    }
-    .reward-col-divider {
-      height: 1.5px;
-      background: var(--border);
-      margin: var(--space-4) 0;
-    }
-
-    /* ===== EARN LIST ===== */
-    .earn-for-title {
-      font-family: var(--font-display);
-      font-weight: 600;
-      font-size: clamp(1.5rem, 4vw, 2rem);
-      color: var(--red);
-      text-align: center;
-      margin-bottom: var(--space-5);
-    }
-    .earn-for-list {
-      list-style: none;
-      text-align: center;
-      display: flex; flex-direction: column; gap: var(--space-3);
-    }
-    .earn-for-list li {
-      font-family: var(--font-body);
-      font-size: clamp(0.95rem, 2.5vw, 1.1rem);
-      color: var(--text);
-    }
-
-    /* ===== HISTORY ===== */
-    .history-box {
-      background: white;
-      border: 2px solid var(--border);
-      border-radius: var(--radius-xl);
-      overflow: hidden;
-    }
-    .history-empty {
-      padding: var(--space-10);
-      text-align: center;
-      color: var(--text-faint);
-      font-family: var(--font-display);
-      font-size: 1rem;
-    }
-    .history-item {
-      display: flex; align-items: center; gap: var(--space-3);
-      padding: var(--space-3) var(--space-5);
-      border-bottom: 1px solid var(--border);
-      font-size: 0.88rem;
-      animation: slideIn 200ms ease;
-    }
-    .history-item:last-child { border-bottom: none; }
-    @keyframes slideIn { from { opacity:0; transform:translateY(-4px); } to { opacity:1; transform:none; } }
-    .h-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--red); flex-shrink: 0; }
-    .h-desc { flex: 1; }
-    .h-pts { font-weight: 800; font-family: var(--font-display); }
-    .h-pts.pos { color: var(--red); }
-    .h-pts.neg { color: #c0392b; }
-    .h-time { color: var(--text-faint); font-size: 0.78rem; flex-shrink: 0; }
-
-    /* ===== TOAST ===== */
-    .toast-container {
-      position: fixed; bottom: var(--space-6); left: 50%;
-      transform: translateX(-50%); z-index: 999;
-      display: flex; flex-direction: column; gap: var(--space-2);
-      align-items: center; pointer-events: none;
-    }
-    .toast {
-      background: var(--red); color: white;
-      padding: var(--space-2) var(--space-5);
-      border-radius: var(--radius-full);
-      font-family: var(--font-display);
-      font-size: 1rem; font-weight: 600;
-      box-shadow: 0 4px 20px rgba(232,68,42,0.35);
-      animation: toastIn 280ms cubic-bezier(0.16,1,0.3,1), toastOut 280ms 2.2s ease forwards;
-      white-space: nowrap;
-    }
-    @keyframes toastIn { from { opacity:0; transform:translateY(10px) scale(0.95); } to { opacity:1; transform:none; } }
-    @keyframes toastOut { to { opacity:0; transform:translateY(6px) scale(0.95); } }
-
-    /* ===== WHITE CARD SECTIONS ===== */
-    .white-card {
-      background: white;
-      border-radius: var(--radius-xl);
-      padding: var(--space-6);
-      box-shadow: var(--shadow-sm);
-      border: 1.5px solid var(--border);
-    }
-
-    .section-gap { height: var(--space-10); }
-    .reset-row { text-align: center; margin-top: var(--space-6); }
-  </style>
+</style>
 </head>
 <body>
-
 <div class="page">
 
-  <!-- HEADER -->
-  <header class="site-header">
-    <div class="header-title">MAMA</div>
-    <div class="header-subtitle">Points Club</div>
-    <span class="header-heart">♥</span>
-  </header>
+<header class="site-header">
+<h1 class="header-title">MAMA</h1>
+<p class="header-subtitle">Points Club</p>
+<span class="header-heart">♥</span>
+</header>
 
-  <!-- KIDS CARDS -->
-  <div class="white-card">
-    <div class="kids-grid">
+<div class="kids-grid">
 
-      <!-- NASH -->
-      <div class="kid-section" id="nash-section">
-        <div class="kid-name">Nash</div>
+<section id="nash-section" class="kid-section">
+<h2 class="kid-name">Nash</h2>
+<div id="nash-tokens" class="tokens-grid"></div>
+<div class="points-counter">
+<div id="nash-points" class="points-number" data-prev="0">0</div>
+<div class="points-label">points</div>
+</div>
+<div class="progress-wrap">
+<div class="progress-info"><span id="nash-next-label">Next: 30 pts</span><span id="nash-pct">0%</span></div>
+<div class="progress-bg"><div id="nash-bar" class="progress-fill" style="width:0%"></div></div>
+</div>
+<div class="earn-section-label">Tap to earn +10</div>
+<div class="earn-btns">
+<button class="earn-btn" onclick="window.addPoints('nash', 10, 'Getting ready when asked')"><span>🌅</span> Getting ready when asked</button>
+<button class="earn-btn" onclick="window.addPoints('nash', 10, 'Joyfully helping')"><span>🙌</span> Joyfully helping</button>
+<button class="earn-btn" onclick="window.addPoints('nash', 10, 'Trying again')"><span>💪</span> Trying again</button>
+<button class="earn-btn" onclick="window.addPoints('nash', 10, 'Kindness to family')"><span>❤️</span> Kindness to family</button>
+<button class="earn-btn" onclick="window.addPoints('nash', 10, 'Taking initiative')"><span>🌟</span> Taking initiative</button>
+<button class="earn-btn" onclick="window.addPoints('nash', 10, 'Listening first time')"><span>👂</span> Listening first time</button>
+<button class="earn-btn" onclick="window.addPoints('nash', 10, 'Calm body')"><span>🧘</span> Calm body</button>
+</div>
+<div class="manual-row">
+<input class="manual-input" type="number" id="nash-manual" placeholder="Custom points…" aria-label="Custom points for Nash">
+<button class="btn btn-primary" onclick="window.addManual('nash')">Add</button>
+<button class="btn btn-ghost" onclick="window.addPoints('nash', -10, 'Points deducted')">−10</button>
+</div>
+<button class="btn btn-danger" onclick="window.confirmReset('nash')">Reset Nash</button>
+</section>
 
-        <!-- Token bubbles -->
-        <div class="tokens-grid" id="nash-tokens"></div>
+<section id="lake-section" class="kid-section">
+<h2 class="kid-name">Lake</h2>
+<div id="lake-tokens" class="tokens-grid"></div>
+<div class="points-counter">
+<div id="lake-points" class="points-number" data-prev="0">0</div>
+<div class="points-label">points</div>
+</div>
+<div class="progress-wrap">
+<div class="progress-info"><span id="lake-next-label">Next: 30 pts</span><span id="lake-pct">0%</span></div>
+<div class="progress-bg"><div id="lake-bar" class="progress-fill" style="width:0%"></div></div>
+</div>
+<div class="earn-section-label">Tap to earn +10</div>
+<div class="earn-btns">
+<button class="earn-btn" onclick="window.addPoints('lake', 10, 'Getting ready when asked')"><span>🌅</span> Getting ready when asked</button>
+<button class="earn-btn" onclick="window.addPoints('lake', 10, 'Joyfully helping')"><span>🙌</span> Joyfully helping</button>
+<button class="earn-btn" onclick="window.addPoints('lake', 10, 'Trying again')"><span>💪</span> Trying again</button>
+<button class="earn-btn" onclick="window.addPoints('lake', 10, 'Kindness to family')"><span>❤️</span> Kindness to family</button>
+<button class="earn-btn" onclick="window.addPoints('lake', 10, 'Taking initiative')"><span>🌟</span> Taking initiative</button>
+<button class="earn-btn" onclick="window.addPoints('lake', 10, 'Listening first time')"><span>👂</span> Listening first time</button>
+<button class="earn-btn" onclick="window.addPoints('lake', 10, 'Calm body')"><span>🧘</span> Calm body</button>
+<button class="earn-btn" onclick="window.addPoints('lake', 10, 'Staying in bed all night')"><span>🌙</span> Staying in bed all night</button>
+</div>
+<div class="manual-row">
+<input class="manual-input" type="number" id="lake-manual" placeholder="Custom points…" aria-label="Custom points for Lake">
+<button class="btn btn-primary" onclick="window.addManual('lake')">Add</button>
+<button class="btn btn-ghost" onclick="window.addPoints('lake', -10, 'Points deducted')">−10</button>
+</div>
+<button class="btn btn-danger" onclick="window.confirmReset('lake')">Reset Lake</button>
+</section>
 
-        <!-- Points counter -->
-        <div class="points-counter">
-          <div class="points-number" id="nash-points">0</div>
-          <div class="points-label">points</div>
-        </div>
+</div>
 
-        <!-- Progress -->
-        <div class="progress-wrap">
-          <div class="progress-info">
-            <span id="nash-next-label">Next: 30 pts</span>
-            <span id="nash-pct">0%</span>
-          </div>
-          <div class="progress-bg">
-            <div class="progress-fill" id="nash-bar" style="width:0%"></div>
-          </div>
-        </div>
+<div class="section-gap"></div>
 
-        <!-- Earn buttons -->
-        <div class="earn-section-label">Tap to earn +10</div>
-        <div class="earn-btns">
-          <button class="earn-btn" onclick="addPoints('nash',10,'Getting ready when asked')">🌅 Getting ready when asked</button>
-          <button class="earn-btn" onclick="addPoints('nash',10,'Joyfully helping')">🙌 Joyfully helping</button>
-          <button class="earn-btn" onclick="addPoints('nash',10,'Trying again')">💪 Trying again</button>
-          <button class="earn-btn" onclick="addPoints('nash',10,'Kindness to family')">❤️ Kindness to family</button>
-          <button class="earn-btn" onclick="addPoints('nash',10,'Taking initiative')">🌟 Taking initiative</button>
-          <button class="earn-btn" onclick="addPoints('nash',10,'Listening the first time')">👂 Listening first time</button>
-          <button class="earn-btn" onclick="addPoints('nash',10,'Using a calm body')">🧘 Calm body</button>
-        </div>
-        <div class="manual-row">
-          <input class="manual-input" type="number" id="nash-manual" placeholder="Custom points…" aria-label="Custom points for Nash"/>
-          <button class="btn btn-primary" onclick="addManual('nash')">Add</button>
-          <button class="btn btn-ghost" onclick="addPoints('nash',-10,'Points removed')">−10</button>
-        </div>
-        <button class="btn btn-danger" onclick="confirmReset('nash')">Reset Nash</button>
-      </div>
+<div class="white-card">
+<div class="section-divider"><span class="section-divider-label">Earn ♥ for</span></div>
+<ul class="earn-for-list">
+<li>Getting ready when asked</li>
+<li>Joyfully helping with a task</li>
+<li>Trying again when something feels hard</li>
+<li>Kindness to family</li>
+<li>Taking initiative on something that needs to be done</li>
+<li>Listening the first time</li>
+<li>Using a calm body</li>
+</ul>
+</div>
 
-      <!-- LAKE -->
-      <div class="kid-section" id="lake-section">
-        <div class="kid-name">Lake</div>
+<div class="section-gap"></div>
 
-        <div class="tokens-grid" id="lake-tokens"></div>
+<div class="rewards-header">
+<h2 class="rewards-title">REWARD MENU ♥</h2>
+</div>
+<div class="rewards-cols">
+<div>
+<h3 class="reward-col-name">Nash</h3>
+<div class="reward-tier-block">
+<p class="reward-tier-pts">30 Points</p>
+<ul class="reward-list"><li>Choose dessert</li><li>Stay up 15 minutes later</li><li>1:1 time with Mom</li></ul>
+</div>
+<div class="reward-tier-block">
+<p class="reward-tier-pts">50 Points</p>
+<ul class="reward-list"><li>Choose dinner</li><li>$5 spending money</li><li>Invite a friend over</li><li>Pick the family movie</li><li>15 min extra screen time</li></ul>
+</div>
+<div class="reward-tier-block">
+<p class="reward-tier-pts">100 Points</p>
+<ul class="reward-list"><li>New Lego / small toy</li><li>Movie outing</li><li>Mom + Nash date</li><li>Choose a family outing</li></ul>
+</div>
+</div>
+<div>
+<h3 class="reward-col-name">Lake</h3>
+<div class="reward-tier-block">
+<p class="reward-tier-pts">30 Points</p>
+<ul class="reward-list"><li>Treat</li><li>Pick a show</li><li>Stickers</li></ul>
+</div>
+<div class="reward-tier-block">
+<p class="reward-tier-pts">50 Points</p>
+<ul class="reward-list"><li>Choose dessert</li><li>Pick a game</li><li>Choose dinner</li><li>Pick the family movie</li></ul>
+</div>
+<div class="reward-tier-block">
+<p class="reward-tier-pts">100 Points</p>
+<ul class="reward-list"><li>Small toy</li><li>Ice cream date</li><li>Mom date</li></ul>
+</div>
+</div>
+</div>
 
-        <div class="points-counter">
-          <div class="points-number" id="lake-points">0</div>
-          <div class="points-label">points</div>
-        </div>
+<div class="section-gap"></div>
 
-        <div class="progress-wrap">
-          <div class="progress-info">
-            <span id="lake-next-label">Next: 30 pts</span>
-            <span id="lake-pct">0%</span>
-          </div>
-          <div class="progress-bg">
-            <div class="progress-fill" id="lake-bar" style="width:0%"></div>
-          </div>
-        </div>
+<div class="white-card">
+<h2 class="earn-for-title">Recent Activity</h2>
+<div class="history-box">
+<div id="history-empty" class="history-empty">No activity yet — start earning points! ♥</div>
+<div id="history-log"></div>
+</div>
+<div class="reset-row">
+<button class="btn btn-danger" onclick="window.confirmResetAll()">Reset All Points</button>
+</div>
+</div>
 
-        <div class="earn-section-label">Tap to earn +10</div>
-        <div class="earn-btns">
-          <button class="earn-btn" onclick="addPoints('lake',10,'Getting ready when asked')">🌅 Getting ready when asked</button>
-          <button class="earn-btn" onclick="addPoints('lake',10,'Joyfully helping')">🙌 Joyfully helping</button>
-          <button class="earn-btn" onclick="addPoints('lake',10,'Trying again')">💪 Trying again</button>
-          <button class="earn-btn" onclick="addPoints('lake',10,'Kindness to family')">❤️ Kindness to family</button>
-          <button class="earn-btn" onclick="addPoints('lake',10,'Taking initiative')">🌟 Taking initiative</button>
-          <button class="earn-btn" onclick="addPoints('lake',10,'Listening the first time')">👂 Listening first time</button>
-          <button class="earn-btn" onclick="addPoints('lake',10,'Using a calm body')">🧘 Calm body</button>
-          <button class="earn-btn" onclick="addPoints('lake',10,'Staying in your bed all night')">🌙 Staying in bed all night</button>
-        </div>
-        <div class="manual-row">
-          <input class="manual-input" type="number" id="lake-manual" placeholder="Custom points…" aria-label="Custom points for Lake"/>
-          <button class="btn btn-primary" onclick="addManual('lake')">Add</button>
-          <button class="btn btn-ghost" onclick="addPoints('lake',-10,'Points removed')">−10</button>
-        </div>
-        <button class="btn btn-danger" onclick="confirmReset('lake')">Reset Lake</button>
-      </div>
+</div>
 
-    </div>
-  </div>
-
-  <!-- EARN FOR LIST -->
-  <div class="section-gap"></div>
-  <div class="section-divider"><span class="section-divider-label">Earn ♥ for</span></div>
-  <div class="white-card">
-    <ul class="earn-for-list">
-      <li>Getting ready when asked</li>
-      <li>Joyfully helping with a task</li>
-      <li>Trying again when something feels hard</li>
-      <li>Kindness to family</li>
-      <li>Taking initiative on something that needs to be done</li>
-      <li>Listening the first time</li>
-      <li>Using a calm body</li>
-    </ul>
-  </div>
-
-  <!-- REWARD MENU -->
-  <div class="section-gap"></div>
-  <div class="rewards-header">
-    <div class="rewards-title">REWARD MENU</div>
-    <span class="header-heart">♥</span>
-  </div>
-  <div class="white-card">
-    <div class="rewards-cols">
-
-      <!-- Nash rewards -->
-      <div>
-        <div class="reward-col-name">Nash</div>
-        <div class="reward-tier-block">
-          <div class="reward-tier-pts">30 Points</div>
-          <ul class="reward-list">
-            <li>Choose dessert</li>
-            <li>Stay up 15 minutes later</li>
-            <li>1:1 time with Mom</li>
-          </ul>
-        </div>
-        <div class="reward-col-divider"></div>
-        <div class="reward-tier-block">
-          <div class="reward-tier-pts">50 Points</div>
-          <ul class="reward-list">
-            <li>Choose dinner</li>
-            <li>$5 spending money</li>
-            <li>Invite a friend over</li>
-            <li>Pick the family movie</li>
-            <li>15 min extra screen time</li>
-          </ul>
-        </div>
-        <div class="reward-col-divider"></div>
-        <div class="reward-tier-block">
-          <div class="reward-tier-pts">100 Points</div>
-          <ul class="reward-list">
-            <li>New Lego / small toy</li>
-            <li>Movie outing</li>
-            <li>Mom + Nash date</li>
-            <li>Choose a family outing</li>
-          </ul>
-        </div>
-      </div>
-
-      <!-- Lake rewards -->
-      <div>
-        <div class="reward-col-name">Lake</div>
-        <div class="reward-tier-block">
-          <div class="reward-tier-pts">30 Points</div>
-          <ul class="reward-list">
-            <li>Treat</li>
-            <li>Pick a show</li>
-            <li>Stickers</li>
-          </ul>
-        </div>
-        <div class="reward-col-divider"></div>
-        <div class="reward-tier-block">
-          <div class="reward-tier-pts">50 Points</div>
-          <ul class="reward-list">
-            <li>Choose dessert</li>
-            <li>Pick a game</li>
-            <li>Choose dinner</li>
-            <li>Pick the family movie</li>
-          </ul>
-        </div>
-        <div class="reward-col-divider"></div>
-        <div class="reward-tier-block">
-          <div class="reward-tier-pts">100 Points</div>
-          <ul class="reward-list">
-            <li>Small toy</li>
-            <li>Ice cream date</li>
-            <li>Mom date</li>
-          </ul>
-        </div>
-      </div>
-
-    </div>
-  </div>
-
-  <!-- RECENT ACTIVITY -->
-  <div class="section-gap"></div>
-  <div class="section-divider"><span class="section-divider-label">Recent Activity</span></div>
-  <div class="history-box" id="history-log">
-    <div class="history-empty" id="history-empty">No activity yet — start earning points! ♥</div>
-  </div>
-
-  <div class="reset-row">
-    <button class="btn btn-danger" onclick="confirmResetAll()">Reset All Points</button>
-  </div>
-
-</div><!-- /page -->
-
-<div class="toast-container" id="toast-container" aria-live="polite"></div>
+<div id="toast-container" class="toast-container"></div>
 
 <script>
-(function(){
-  var state = { nash: 0, lake: 0 };
-  var history = [];
-  var TIERS = [30, 50, 100];
+// ===== FIREBASE CONFIG & INIT =====
+const firebaseConfig = {
+  apiKey: "AIzaSyCKr2w3aj5FzFHrzYwlCWVgf-ks7sHgnQA",
+  authDomain: "mama-points-club.firebaseapp.com",
+  projectId: "mama-points-club",
+  storageBucket: "mama-points-club.firebasestorage.app",
+  messagingSenderId: "518403995077",
+  appId: "1:518403995077:web:51770ea225ee9d793b87ac",
+  measurementId: "G-3J8PJCCFM"
+};irebaseConfig);
+const db = firebase.firestore();
 
-  function getNextTier(pts) {
-    for (var i = 0; i < TIERS.length; i++) { if (pts < TIERS[i]) return TIERS[i]; }
-    return null;
-  }
+// ===== STATE & SETTINGS =====
+const KIDS = ['nash', 'lake'];
+const TIERS = [30, 50, 100];
+const state = { nash: { points: 0 }, lake: { points: 0 } };
 
-  function renderTokens(kid) {
-    var pts = state[kid];
-    var container = document.getElementById(kid + '-tokens');
-    container.innerHTML = '';
+function getNextTier(pts) {
+  for (var i = 0; i < TIERS.length; i++) { if (pts < TIERS[i]) return TIERS[i]; }
+  return null;
+}
 
-    // Show up to 100 points as tokens (max 10 tokens per row, groups of 5 with a heart)
-    // Each token = 10 pts. Show at most 10 tokens (100 pts).
-    var totalTokens = Math.min(Math.floor(pts / 10), 10);
-    var displayCount = Math.max(totalTokens, 5); // always show at least 5 slots
-
-    for (var i = 0; i < displayCount; i++) {
-      var t = document.createElement('div');
-      var isHeart = (i + 1) % 5 === 0;
-      t.className = 'token' + (i < totalTokens ? ' filled' : '') + (isHeart ? ' heart-token' : '');
-      t.textContent = isHeart ? '♥' : '10';
-      container.appendChild(t);
-    }
-  }
-
-  function updateCard(kid) {
-    var pts = state[kid];
-    var el = document.getElementById(kid + '-points');
-    var prev = parseInt(el.getAttribute('data-prev') || '0');
-    el.setAttribute('data-prev', pts);
-
-    if (pts !== prev) {
-      el.style.transform = 'scale(1.25)';
-      el.style.opacity = '0.6';
-      setTimeout(function() {
-        el.textContent = pts;
-        el.style.transform = '';
-        el.style.opacity = '';
-      }, 130);
-    } else {
-      el.textContent = pts;
-    }
-
-    renderTokens(kid);
-
-    var next = getNextTier(pts);
-    var prevTier = 0;
-    for (var i = TIERS.length - 1; i >= 0; i--) {
-      if (TIERS[i] <= pts) { prevTier = TIERS[i]; break; }
-    }
-    var barEl = document.getElementById(kid + '-bar');
-    var lblEl = document.getElementById(kid + '-next-label');
-    var pctEl = document.getElementById(kid + '-pct');
-
-    if (next) {
-      var range = next - prevTier;
-      var prog = pts - prevTier;
-      var pct = Math.round((prog / range) * 100);
-      barEl.style.width = pct + '%';
-      lblEl.textContent = 'Next: ' + next + ' pts';
-      pctEl.textContent = pct + '%';
-    } else {
-      barEl.style.width = '100%';
-      lblEl.textContent = 'All rewards unlocked!';
-      pctEl.textContent = '100%';
-    }
-  }
-
-  function addToHistory(kid, pts, reason) {
-    var now = new Date();
-    var t = now.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
-    history.unshift({kid: kid, pts: pts, reason: reason, time: t});
-    if (history.length > 30) history.pop();
-    renderHistory();
-  }
-
-  function renderHistory() {
-    var log = document.getElementById('history-log');
-    var empty = document.getElementById('history-empty');
-    var existing = log.querySelectorAll('.history-item');
-    for (var i = 0; i < existing.length; i++) existing[i].remove();
-
-    if (history.length === 0) { empty.style.display = ''; return; }
-    empty.style.display = 'none';
-
-    for (var j = 0; j < history.length; j++) {
-      var item = history[j];
-      var div = document.createElement('div');
-      div.className = 'history-item';
-      var sign = item.pts >= 0 ? '+' : '';
-      var cls = item.pts >= 0 ? 'pos' : 'neg';
-      var name = item.kid.charAt(0).toUpperCase() + item.kid.slice(1);
-      div.innerHTML =
-        '<div class="h-dot"></div>' +
-        '<span class="h-desc"><strong>' + name + '</strong> — ' + item.reason + '</span>' +
-        '<span class="h-pts ' + cls + '">' + sign + item.pts + '</span>' +
-        '<span class="h-time">' + item.time + '</span>';
-      log.appendChild(div);
-    }
-  }
-
-  function showToast(msg) {
-    var container = document.getElementById('toast-container');
+function renderTokens(kid) {
+  var pts = state[kid].points;
+  var container = document.getElementById(kid + '-tokens');
+  container.innerHTML = '';
+  var totalTokens = Math.min(Math.floor(pts / 10), 10);
+  var displayCount = Math.max(totalTokens, 5);
+  for (var i = 0; i < displayCount; i++) {
     var t = document.createElement('div');
-    t.className = 'toast';
-    t.textContent = msg;
+    var isHeart = (i + 1) % 5 === 0;
+    t.className = 'token' + (i < totalTokens ? ' filled' : '') + (isHeart ? ' heart-token' : '');
+    t.textContent = isHeart ? '♥' : '10';
     container.appendChild(t);
-    setTimeout(function(){ t.remove(); }, 2600);
   }
+}
 
-  function fireConfetti(kid, big) {
-    if (typeof confetti !== 'function') return;
-    var colors = ['#e8442a', '#f5b4ac', '#ffffff', '#fdecea'];
-    var section = document.getElementById(kid + '-section');
-    var rect = section ? section.getBoundingClientRect() : null;
-    var ox = rect ? (rect.left + rect.width / 2) / window.innerWidth : 0.5;
-    var oy = rect ? (rect.top + rect.height / 2) / window.innerHeight : 0.5;
-
-    if (big) {
-      confetti({particleCount: 160, spread: 100, origin: {x: ox, y: oy}, colors: colors, scalar: 1.3});
-      setTimeout(function(){
-        confetti({particleCount: 70, spread: 60, angle: 120, origin: {x: ox - 0.1, y: oy}, colors: colors});
-        confetti({particleCount: 70, spread: 60, angle: 60,  origin: {x: ox + 0.1, y: oy}, colors: colors});
-      }, 250);
-    } else {
-      confetti({particleCount: 40, spread: 50, origin: {x: ox, y: oy}, colors: colors, scalar: 0.9, gravity: 1.2});
-    }
+function updateCard(kid) {
+  var pts = state[kid].points;
+  var el = document.getElementById(kid + '-points');
+  var prev = parseInt(el.getAttribute('data-prev') || '0');
+  el.setAttribute('data-prev', pts);
+  if (pts !== prev) {
+    el.style.transform = 'scale(1.25)'; el.style.opacity = '0.6';
+    setTimeout(function() { el.textContent = pts; el.style.transform = ''; el.style.opacity = ''; }, 130);
+  } else { el.textContent = pts; }
+  renderTokens(kid);
+  var next = getNextTier(pts);
+  var prevTier = 0;
+  for (var i = TIERS.length - 1; i >= 0; i--) { if (TIERS[i] <= pts) { prevTier = TIERS[i]; break; } }
+  var barEl = document.getElementById(kid + '-bar');
+  var lblEl = document.getElementById(kid + '-next-label');
+  var pctEl = document.getElementById(kid + '-pct');
+  if (next) {
+    var range = next - prevTier; var prog = pts - prevTier;
+    var pct = Math.round((prog / range) * 100);
+    barEl.style.width = pct + '%'; lblEl.textContent = 'Next: ' + next + ' pts'; pctEl.textContent = pct + '%';
+  } else {
+    barEl.style.width = '100%'; lblEl.textContent = 'All rewards unlocked!'; pctEl.textContent = '100%';
   }
+}
 
-  window.addPoints = function(kid, pts, reason) {
-    state[kid] = Math.max(0, state[kid] + pts);
-    updateCard(kid);
-    addToHistory(kid, pts, reason);
-    var name = kid.charAt(0).toUpperCase() + kid.slice(1);
-    var sign = pts >= 0 ? '+' : '';
-    showToast(name + ': ' + sign + pts + ' pts');
+function showToast(msg) {
+  var container = document.getElementById('toast-container');
+  var t = document.createElement('div');
+  t.className = 'toast'; t.textContent = msg;
+  container.appendChild(t);
+  setTimeout(function(){ t.remove(); }, 2600);
+}
 
-    if (pts > 0) {
-      var newPts = state[kid];
-      var isMilestone = TIERS.indexOf(newPts) !== -1;
-      fireConfetti(kid, isMilestone);
-      if (isMilestone) {
-        setTimeout(function(){ showToast('🎉 ' + name + ' reached ' + newPts + ' points!'); }, 400);
+function fireConfetti(kid, big) {
+  if (typeof confetti !== 'function') return;
+  var colors = ['#e8442a', '#f5b4ac', '#ffffff', '#fdecea'];
+  var section = document.getElementById(kid + '-section');
+  var rect = section ? section.getBoundingClientRect() : null;
+  var ox = rect ? (rect.left + rect.width / 2) / window.innerWidth : 0.5;
+  var oy = rect ? (rect.top + rect.height / 2) / window.innerHeight : 0.5;
+  if (big) {
+    confetti({particleCount: 160, spread: 100, origin: {x: ox, y: oy}, colors: colors, scalar: 1.3});
+    setTimeout(function(){ confetti({particleCount: 70, spread: 60, angle: 120, origin: {x: ox - 0.1, y: oy}, colors: colors}); confetti({particleCount: 70, spread: 60, angle: 60, origin: {x: ox + 0.1, y: oy}, colors: colors}); }, 250);
+  } else {
+    confetti({particleCount: 40, spread: 50, origin: {x: ox, y: oy}, colors: colors, scalar: 0.9, gravity: 1.2});
+  }
+}
+
+// ===== FIRESTORE SYNC =====
+function syncLocalToFirestore(kid, newPts, reason) {
+  db.collection('kids').doc(kid).set({
+    points: newPts,
+    reason: reason,
+    updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+  }, { merge: true }).then(function() {
+    console.log('Synced ' + kid + ' to ' + newPts);
+  }).catch(function(err) {
+    console.error('Sync error:', err);
+  });
+}
+
+function loadFromFirestore() {
+  KIDS.forEach(function(kid) {
+    db.collection('kids').doc(kid).onSnapshot(function(doc) {
+      if (doc.exists) {
+        var data = doc.data();
+        state[kid].points = data.points || 0;
+        updateCard(kid);
+      } else {
+        state[kid].points = 0;
+        updateCard(kid);
+        syncLocalToFirestore(kid, 0, 'Initialized');
       }
-    }
-  };
-
-  window.addManual = function(kid) {
-    var input = document.getElementById(kid + '-manual');
-    var val = parseInt(input.value);
-    if (isNaN(val) || val === 0) { showToast('Enter a valid number'); return; }
-    window.addPoints(kid, val, val > 0 ? 'Points added manually' : 'Points deducted');
-    input.value = '';
-  };
-
-  window.confirmReset = function(kid) {
-    var name = kid.charAt(0).toUpperCase() + kid.slice(1);
-    if (confirm('Reset ' + name + "'s points to 0?")) {
-      state[kid] = 0;
+    }, function(err) {
+      console.error('Firestore error for ' + kid + ':', err);
+      state[kid].points = 0;
       updateCard(kid);
-      addToHistory(kid, 0, 'Points reset');
-      showToast(name + "'s points reset");
-    }
-  };
+    });
+  });
+}
 
-  window.confirmResetAll = function() {
-    if (confirm('Reset ALL points for both kids?')) {
-      state.nash = 0; state.lake = 0;
-      updateCard('nash'); updateCard('lake');
-      showToast('All points reset');
+// ===== PUBLIC API =====
+window.addPoints = function(kid, pts, reason) {
+  var oldPts = state[kid].points;
+  state[kid].points = Math.max(0, oldPts + pts);
+  var newPts = state[kid].points;
+  updateCard(kid);
+  var name = kid.charAt(0).toUpperCase() + kid.slice(1);
+  var sign = pts >= 0 ? '+' : '';
+  showToast(name + ': ' + sign + pts + ' pts');
+  if (pts > 0) {
+    var isMilestone = TIERS.indexOf(newPts) !== -1;
+    fireConfetti(kid, isMilestone);
+    if (isMilestone) {
+      setTimeout(function(){ showToast('🎉 ' + name + ' reached ' + newPts + ' points!'); }, 400);
     }
-  };
+  }
+  syncLocalToFirestore(kid, newPts, reason);
+};
 
-  updateCard('nash');
-  updateCard('lake');
-  renderHistory();
-})();
+window.addManual = function(kid) {
+  var input = document.getElementById(kid + '-manual');
+  var val = parseInt(input.value);
+  if (isNaN(val) || val === 0) { showToast('Enter a valid number'); return; }
+  window.addPoints(kid, val, val > 0 ? 'Points added manually' : 'Points deducted');
+  input.value = '';
+};
+
+window.confirmReset = function(kid) {
+  var name = kid.charAt(0).toUpperCase() + kid.slice(1);
+  if (confirm('Reset ' + name + "'s points to 0?")) {
+    state[kid].points = 0;
+    updateCard(kid);
+    showToast(name + "'s points reset");
+    syncLocalToFirestore(kid, 0, 'Points reset');
+  }
+};
+
+window.confirmResetAll = function() {
+  if (confirm('Reset ALL points for both kids?')) {
+    state.nash.points = 0; state.lake.points = 0;
+    updateCard('nash'); updateCard('lake');
+    showToast('All points reset');
+    syncLocalToFirestore('nash', 0, 'All points reset');
+    syncLocalToFirestore('lake', 0, 'All points reset');
+  }
+};
+
+// ===== INIT =====
+loadFromFirestore();
+KIDS.forEach(function(kid) { updateCard(kid); });
+
 </script>
 </body>
 </html>
